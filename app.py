@@ -49,7 +49,7 @@ def upload_file():
         conversion_process = subprocess.run(
             [
                 "tensorflowjs_converter",
-                upload_path,
+                os.path.join(upload_path, "generator"),
                 os.path.join(app.config["RESULTS_FOLDER"], model_id),
             ],
             stdout=subprocess.PIPE,
