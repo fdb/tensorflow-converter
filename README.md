@@ -10,7 +10,7 @@ python3 app.py
 ## Production
 
 ```
-gunicorn app:app
+gunicorn -w 4 -b 0.0.0.0:8000 app:app
 ```
 
 
