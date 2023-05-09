@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Model Converter</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        #drop_zone {
+            border: 2px dashed #bbb;
+            padding: 20px;
+            width: 300px;
+            margin: 0 auto;
+            font-size: 0.8rem;
+            text-align: center;
+        }
+
+        #drop_zone.over {
+            border-color: #bbf;
+            background-color: #ccf;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Tensorflow Converter</h1>
+    <div id="drop_zone">Drop TensorFlow saved model ZIP file here</div>
+    <button type="button" id="download_button" disabled>Download TFJS model</button>
+    <script>
+        let dropZone = document.getElementById('drop_zone');
+        let downloadButton = document.getElementById('download_button');
+
+        // Prevent default drag behaviors
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        dropZone.addEventListener('dragenter', () => dropZone.classList.add('over'), false);
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'), false);
+
+        dropZone.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            let files = e.dataTransfer.files;
+            console.log(files);
+            uploadFile(files[0]);
+        }
+
+        function uploadFile(file) {
+            let url = '/upload';
+            let formData = new FormData();
+
+            formData.append('file', file);
+
+            fetch(url, {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.text())
+                .then(modelId => {
+                    downloadButton.disabled = false;
+                    downloadButton.onclick = () => window.location = '/download/' + modelId;
+                })
+                .catch((e) => {
+                    alert('Upload failed.');
+                    console.error(e);
+
+                });
+        }
+    </script>
+</body>
+
+</html>
