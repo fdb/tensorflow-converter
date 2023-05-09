@@ -54,6 +54,7 @@
         dropZone.addEventListener('drop', handleDrop, false);
 
         function handleDrop(e) {
+            dropZone.classList.remove('over')
             let files = e.dataTransfer.files;
             console.log(files);
             uploadFile(files[0]);
@@ -69,10 +70,16 @@
                 method: 'POST',
                 body: formData
             })
-                .then(response => response.text())
-                .then(modelId => {
+                .then(response => response.json())
+                .then(res => {
+                    if (res.status !== 'ok') {
+                        alert('Upload failed.');
+                        console.error(res);
+                        return;
+                    }
+                    console.log(res);
                     downloadButton.disabled = false;
-                    downloadButton.onclick = () => window.location = '/download/' + modelId;
+                    downloadButton.onclick = () => window.location = '/download/' + res.id;
                 })
                 .catch((e) => {
                     alert('Upload failed.');

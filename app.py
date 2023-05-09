@@ -60,6 +60,7 @@ def upload_file():
             return (
                 jsonify(
                     {
+                        "status": "error",
                         "error": "Conversion failed",
                         "output": conversion_process.stdout.decode(),
                     }
@@ -68,13 +69,38 @@ def upload_file():
             )
 
         # Zip the results
-        subprocess.run(
+        zip_process = subprocess.run(
             [
                 "zip",
                 "-r0",
                 f'{os.path.join(app.config["RESULTS_FOLDER"], model_id)}.zip',
                 os.path.join(app.config["RESULTS_FOLDER"], model_id),
-            ]
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+
+        if zip_process.returncode != 0:
+            return (
+                jsonify(
+                    {
+                        "status": "error",
+                        "error": "Zipping failed",
+                        "output": zip_process.stdout.decode(),
+                    }
+                ),
+                200,
+            )
+
+        return (
+            jsonify(
+                {
+                    "status": "success",
+                    "id": model_id,
+                    "output": conversion_process.stdout.decode(),
+                }
+            ),
+            200,
         )
 
         return model_id, 200
