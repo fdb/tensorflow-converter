@@ -2,91 +2,50 @@
 <html>
 
 <head>
+    <meta charset="utf-8" />
+    <meta name="description" content="TensorFlow model converter" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Model Converter</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 1rem;
-        }
-
-        #drop_zone {
-            border: 2px dashed #bbb;
-            padding: 20px;
-            width: 300px;
-            margin: 0 auto;
-            font-size: 0.8rem;
-            text-align: center;
-        }
-
-        #drop_zone.over {
-            border-color: #bbf;
-            background-color: #ccf;
-        }
-    </style>
+    <link rel="stylesheet" href="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone.css" />
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
     <h1>Tensorflow Converter</h1>
-    <div id="drop_zone">Drop TensorFlow saved model ZIP file here</div>
+    <div id="drop_zone" class="disabled dropzone">
+        <span class="text-lg">Drag &amp; Drop</span>
+        <span class="text-sm">TensorFlow saved model ZIP file here</span>
+        <span class="text-sm">— OR —</span>
+        <span class="fake-button">Browse Files</button>
+
+    </div>
+
     <button type="button" id="download_button" disabled>Download TFJS model</button>
+    <script src="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone-min.js"></script>
     <script>
-        let dropZone = document.getElementById('drop_zone');
-        let downloadButton = document.getElementById('download_button');
-
-        // Prevent default drag behaviors
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            dropZone.addEventListener(eventName, preventDefaults, false);
-        });
-
-        function preventDefaults(e) {
-            e.preventDefault();
-            e.stopPropagation();
+        async function prepareDropzone() {
+            const res = await fetch("/generate-upload-url", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+            if (!res.ok) {
+                throw new Error("Failed to generate upload URL");
+            }
+            const {url, file_name} = await res.json();
+            console.log(url);
+            let myDropzone = new Dropzone("#drop_zone", {url, method: "put", binaryBody: true, acceptedFiles: "application/zip"});
+            myDropzone.on("addedfile", (file) => {
+                console.log("added file", file);
+            });
+            myDropzone.on("complete", (file) => {
+                console.log(file);
+            });
+            console.log(myDropzone)
+            document.getElementById("drop_zone").classList.remove("disabled");
         }
-
-        dropZone.addEventListener('dragenter', () => dropZone.classList.add('over'), false);
-        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('over'), false);
-
-        dropZone.addEventListener('drop', handleDrop, false);
-
-        function handleDrop(e) {
-            dropZone.classList.remove('over')
-            let files = e.dataTransfer.files;
-            console.log(files);
-            uploadFile(files[0]);
-        }
-
-        function uploadFile(file) {
-            let url = '/upload';
-            let formData = new FormData();
-
-            formData.append('file', file);
-
-            fetch(url, {
-                method: 'POST',
-                body: formData
-            })
-                .then(response => response.json())
-                .then(res => {
-                    if (res.status !== 'ok') {
-                        alert('Upload failed.');
-                        console.error(res);
-                        return;
-                    }
-                    console.log(res);
-                    downloadButton.disabled = false;
-                    downloadButton.onclick = () => window.location = '/download/' + res.id;
-                })
-                .catch((e) => {
-                    alert('Upload failed.');
-                    console.error(e);
-
-                });
-        }
+        prepareDropzone();
     </script>
 </body>
 

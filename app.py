@@ -1,10 +1,31 @@
 from random import choice
 import zipfile
-from flask import Flask, request, send_from_directory, jsonify
 import os
 import subprocess
+import uuid
+
+from flask import Flask, request, send_from_directory, jsonify
+import boto3
+from botocore.exceptions import NoCredentialsError
+from dotenv import load_dotenv
+from random import choice
+import zipfile
+import os
+import subprocess
+import uuid
+from flask import Flask, request, send_from_directory, jsonify
+from botocore.exceptions import NoCredentialsError
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
+
+session = boto3.session.Session(
+    aws_access_key_id=os.getenv("AWS_S3_ACCESS_KEY_ID"),
+    aws_secret_access_key=os.getenv("AWS_S3_SECRET_ACCESS_KEY"),
+)
+s3_client = session.client("s3")
 
 UPLOAD_FOLDER = "uploads"
 RESULTS_FOLDER = "public/results"
@@ -22,6 +43,23 @@ def allowed_file(filename):
 def random_id(length=20):
     allowed_chars = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789"
     return "".join([choice(allowed_chars) for _ in range(length)])
+
+
+@app.route("/generate-upload-url", methods=["POST"])
+def generate_upload_url():
+    try:
+        file_name = "uploads/" + str(uuid.uuid4()) + ".zip"
+        bucket_name = os.getenv("AWS_S3_BUCKET_NAME")
+        response = s3_client.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": bucket_name, "Key": file_name, "ContentType": "application/zip"},
+            ExpiresIn=3600,
+        )
+        # response = s3_client.generate_presigned_post(bucket_name, file_name, Fields=None, Conditions=None, ExpiresIn=3600)
+        print(response)
+        return jsonify({"url": response, "file_name": file_name})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/upload", methods=["POST"])
@@ -121,4 +159,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=3001)
