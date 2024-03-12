@@ -77,9 +77,10 @@
             const json = await res.json();
             document.getElementById("status").innerText = JSON.stringify(json);
             console.log("status", status);
-            if (status.url) {
+            if (status.state === "SUCCESS") {
+                const url = `https://tensorflow-converter.s3.amazonaws.com/models/${window.uuid}.zip`
                 document.getElementById("download_button").disabled = false;
-                document.getElementById("download_button").onclick = () => window.location = status.url;
+                document.getElementById("download_button").onclick = () => window.location = url;
             }
         }
 
