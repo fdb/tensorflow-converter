@@ -27,14 +27,6 @@ celery = make_celery()
 
 
 @celery.task(bind=True)
-def long_task(self):
-    for i in range(1, 11):
-        sleep(1)  # Sleep for a second
-        current_task.update_state(state="PROGRESS", meta={"current": i, "total": 10})
-    return {"current": 10, "total": 10, "status": "Task completed successfully"}
-
-
-@celery.task(bind=True)
 def convert_and_upload(self, uuid):
     self.update_state(
         state="PROGRESS",
