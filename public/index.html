@@ -26,6 +26,7 @@
     <script>
         window.uuid = null;
         window.task_id = null;
+        window.interval_handle = null;
         async function prepareDropzone() {
             const res = await fetch("/generate-upload-url", {
                 method: "POST",
@@ -66,13 +67,14 @@
                 window.task_id = task_id;
                 console.log("task_id", task_id);
             });
-            window.setInterval(checkTaskStatus, 2000);
+            window.interval_handle = window.setInterval(checkTaskStatus, 2000);
         }
 
         async function checkTaskStatus() {
             const res = await fetch(`/status/${window.task_id}`);
             if (!res.ok) {
-                throw new Error("Failed to get task status");
+                document.getElementById("status").innerText = "Failed to get task status: " + res.status;
+                return;
             }
             const json = await res.json();
             document.getElementById("status").innerText = JSON.stringify(json);
@@ -81,6 +83,9 @@
                 const url = `https://tensorflow-converter.s3.amazonaws.com/models/${window.uuid}.zip`
                 document.getElementById("download_button").disabled = false;
                 document.getElementById("download_button").onclick = () => window.location = url;
+                window.clearInterval(window.interval_handle);
+            } else if (status.state === "FAILURE") {
+                window.clearInterval(window.interval_handle);
             }
         }
 
