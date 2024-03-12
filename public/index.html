@@ -38,6 +38,7 @@
                 throw new Error("Failed to generate upload URL");
             }
             const { url, uuid, file_name } = await res.json();
+            window.uuid = uuid;
             console.log(url);
             let myDropzone = new Dropzone("#drop_zone", { url, method: "put", binaryBody: true, acceptedFiles: "application/zip" });
             myDropzone.on("addedfile", (file) => {
