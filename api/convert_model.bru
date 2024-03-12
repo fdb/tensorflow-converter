@@ -1,0 +1,17 @@
+meta {
+  name: convert_model
+  type: http
+  seq: 1
+}
+
+post {
+  url: http://127.0.0.1:3001/convert
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "uuid": "f8eb3ba0-cc83-4ff0-9d60-61522804958a"
+  }
+}
