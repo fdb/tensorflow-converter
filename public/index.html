@@ -45,6 +45,7 @@
             });
             myDropzone.on("complete", (file) => {
                 console.log(file);
+                document.getElementById("drop_zone").classList.add("hidden");
                 createConvertTask(uuid);
             });
             console.log(myDropzone)
@@ -68,6 +69,14 @@
                 console.log("task_id", task_id);
             });
             window.interval_handle = window.setInterval(checkTaskStatus, 2000);
+        }
+
+        STATE_TO_EMOJI_MAP = {
+            'PENDING': '🕒',
+            'PROGRESS': '🕒',
+            'STARTED': '🕒',
+            'SUCCESS': '✅',
+            'FAILURE': '❌',
         }
 
         async function checkTaskStatus() {
