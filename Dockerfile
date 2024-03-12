@@ -1,5 +1,5 @@
-# Start from a Python 3.8 image
-FROM python:3.8-slim-buster
+# Start from a Python 3.11 image
+FROM python:3.11-slim-buster
 
 # Set a directory for the app
 WORKDIR /usr/src/app
