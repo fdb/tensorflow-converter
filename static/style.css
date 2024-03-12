@@ -53,8 +53,11 @@ body {
 }
 
 #status {
+  padding: 1rem;
+  background-color: #eee;
   font-family: ui-monospace, Menlo, Monaco, "Cascadia Mono", "Segoe UI Mono",
     monospace;
-  white-space: pre;
   font-size: 0.9rem;
+  border-radius: 4px;
+  color: #444;
 }
