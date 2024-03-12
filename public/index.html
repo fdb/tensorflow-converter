@@ -19,10 +19,13 @@
         <span class="fake-button">Browse Files</button>
 
     </div>
+    <div id="status"></div>
 
     <button type="button" id="download_button" disabled>Download TFJS model</button>
     <script src="https://unpkg.com/dropzone@6.0.0-beta.2/dist/dropzone-min.js"></script>
     <script>
+        window.uuid = null;
+        window.task_id = null;
         async function prepareDropzone() {
             const res = await fetch("/generate-upload-url", {
                 method: "POST",
@@ -33,19 +36,51 @@
             if (!res.ok) {
                 throw new Error("Failed to generate upload URL");
             }
-            const {url, file_name} = await res.json();
+            const { url, uuid, file_name } = await res.json();
             console.log(url);
-            let myDropzone = new Dropzone("#drop_zone", {url, method: "put", binaryBody: true, acceptedFiles: "application/zip"});
+            let myDropzone = new Dropzone("#drop_zone", { url, method: "put", binaryBody: true, acceptedFiles: "application/zip" });
             myDropzone.on("addedfile", (file) => {
                 console.log("added file", file);
             });
             myDropzone.on("complete", (file) => {
                 console.log(file);
+                createConvertTask(uuid);
             });
             console.log(myDropzone)
             document.getElementById("drop_zone").classList.remove("disabled");
         }
+
+        function createConvertTask(uuid) {
+            fetch("/convert", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ uuid })
+            }).then(res => {
+                if (!res.ok) {
+                    throw new Error("Failed to create convert task");
+                }
+                return res.json();
+            }).then(({ task_id }) => {
+                window.task_id = task_id;
+                console.log("task_id", task_id);
+            });
+            window.setInterval(checkTaskStatus, 1000);
+        }
+
+        async function checkTaskStatus() {
+            const res = await fetch(`/status/${window.task_id}`);
+            if (!res.ok) {
+                throw new Error("Failed to get task status");
+            }
+            const json = await res.json();
+            document.getElementById("status").innerText = JSON.stringify(json);
+            console.log("status", status);
+        }
+
         prepareDropzone();
+
     </script>
 </body>
 

@@ -1,10 +1,17 @@
 from random import choice
 import zipfile
 import os
+from pathlib import Path
 import subprocess
+from tempfile import mkdtemp
+from threading import Thread
 import uuid
+import zipfile
+import shutil
 
 from flask import Flask, request, send_from_directory, jsonify
+from celery import Celery
+from celery_worker import make_celery, convert_and_upload
 import boto3
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
@@ -12,14 +19,15 @@ from random import choice
 import zipfile
 import os
 import subprocess
-import uuid
 from flask import Flask, request, send_from_directory, jsonify
 from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
+import requests
 
 load_dotenv()
 
 app = Flask(__name__)
+celery = make_celery()
 
 session = boto3.session.Session(
     aws_access_key_id=os.getenv("AWS_S3_ACCESS_KEY_ID"),
@@ -48,18 +56,60 @@ def random_id(length=20):
 @app.route("/generate-upload-url", methods=["POST"])
 def generate_upload_url():
     try:
-        file_name = "uploads/" + str(uuid.uuid4()) + ".zip"
+        upload_uuid = str(uuid.uuid4())
+        file_name = f"uploads/{upload_uuid}.zip"
         bucket_name = os.getenv("AWS_S3_BUCKET_NAME")
-        response = s3_client.generate_presigned_url(
+        signed_url = s3_client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": bucket_name, "Key": file_name, "ContentType": "application/zip"},
+            Params={
+                "Bucket": bucket_name,
+                "Key": file_name,
+                "ContentType": "application/zip",
+            },
             ExpiresIn=3600,
         )
         # response = s3_client.generate_presigned_post(bucket_name, file_name, Fields=None, Conditions=None, ExpiresIn=3600)
-        print(response)
-        return jsonify({"url": response, "file_name": file_name})
+        print(signed_url)
+        return jsonify({"uuid": upload_uuid, "url": signed_url, "file_name": file_name})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+
+@app.route("/status/<task_id>", methods=["GET"])
+def task_status(task_id):
+    task = convert_and_upload.AsyncResult(task_id)
+    if task.state == "PENDING":
+        # Job did not start yet
+        response = {"state": task.state, "status": "Pending..."}
+    elif task.state != "FAILURE":
+        response = {
+            "state": task.state,
+            "status": task.info.get("log", "No log message available yet."),
+        }
+        if "result" in task.info:
+            response["result"] = task.info["result"]
+    else:
+        # Something went wrong in the background job
+        response = {
+            "state": task.state,
+            "status": str(task.info),  # this is the exception raised
+        }
+    return jsonify(response)
+
+
+@app.route("/convert", methods=["POST"])
+def convert_model():
+    data = request.get_json()
+    if not data or "uuid" not in data:
+        return jsonify({"error": "Missing required parameters: uuid"}), 400
+
+    uuid = data["uuid"]
+    bucket_name = os.getenv("AWS_S3_BUCKET_NAME")
+    url = f"https://{bucket_name}.s3.amazonaws.com/models/{uuid}.zip"
+
+    # Run the conversion and upload process in a separate thread
+    task = convert_and_upload.apply_async(args=[uuid])
+    return jsonify({"message": "Conversion started", "task_id": str(task.id)}), 202
 
 
 @app.route("/upload", methods=["POST"])
@@ -159,4 +209,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3001)
+    app.run(host="0.0.0.0", port=3001, debug=True)
