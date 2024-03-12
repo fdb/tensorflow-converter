@@ -77,8 +77,8 @@
                 return;
             }
             const json = await res.json();
-            document.getElementById("status").innerText = JSON.stringify(json);
-            console.log("status", status);
+            const emoji = STATE_TO_EMOJI_MAP[json.state] || json.state;
+            document.getElementById("status").innerText = `${emoji} ${json.status}`;
             if (json.state === "SUCCESS") {
                 const url = `https://tensorflow-converter.s3.amazonaws.com/models/${window.uuid}.zip`
                 document.getElementById("download_button").disabled = false;
