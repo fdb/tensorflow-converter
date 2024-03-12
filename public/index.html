@@ -79,12 +79,12 @@
             const json = await res.json();
             document.getElementById("status").innerText = JSON.stringify(json);
             console.log("status", status);
-            if (status.state === "SUCCESS") {
+            if (json.state === "SUCCESS") {
                 const url = `https://tensorflow-converter.s3.amazonaws.com/models/${window.uuid}.zip`
                 document.getElementById("download_button").disabled = false;
                 document.getElementById("download_button").onclick = () => window.location = url;
                 window.clearInterval(window.interval_handle);
-            } else if (status.state === "FAILURE") {
+            } else if (json.state === "FAILURE") {
                 window.clearInterval(window.interval_handle);
             }
         }
