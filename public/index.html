@@ -40,7 +40,7 @@
             const { url, uuid, file_name } = await res.json();
             window.uuid = uuid;
             console.log(url);
-            let myDropzone = new Dropzone("#drop_zone", { url, method: "put", binaryBody: true, acceptedFiles: "application/zip" });
+            let myDropzone = new Dropzone("#drop_zone", { url, method: "put", binaryBody: true, acceptedFiles: "application/zip,application/zip-compressed,application/x-zip-compressed" });
             myDropzone.on("addedfile", (file) => {
                 console.log("added file", file);
             });
